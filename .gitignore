@@ -1,0 +1,56 @@
+# --- Dependencies ---
+node_modules/
+.pnp
+.pnp.js
+
+# --- Build output ---
+dist/
+build/
+out/
+*.tsbuildinfo
+
+# --- Test artifacts (test sources ARE committed) ---
+coverage/
+.nyc_output/
+playwright-report/
+test-results/
+blob-report/
+.playwright/
+
+# --- IDE / editor folders ---
+.idea/
+.idea_modules/
+.vscode/
+.vs/
+*.iml
+*.ipr
+*.iws
+*.code-workspace
+*.sublime-project
+*.sublime-workspace
+*.swp
+*.swo
+.history/
+.eslintcache
+
+# --- OS junk ---
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# --- Env & secrets ---
+.env
+.env.*
+!.env.example
+
+# --- Logs ---
+*.log
+npm-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# --- Caches ---
+.cache/
+.parcel-cache/
+.turbo/
+.vite/

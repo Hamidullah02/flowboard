@@ -1,0 +1,91 @@
+{
+  "version": 1,
+  "nodes": [
+    {
+      "id": "n1",
+      "kind": "terminal",
+      "x": 300,
+      "y": 40,
+      "w": 120,
+      "h": 48,
+      "label": "Start"
+    },
+    {
+      "id": "n2",
+      "kind": "rect",
+      "x": 300,
+      "y": 140,
+      "w": 120,
+      "h": 60,
+      "label": "Read credentials"
+    },
+    {
+      "id": "n3",
+      "kind": "diamond",
+      "x": 290,
+      "y": 250,
+      "w": 140,
+      "h": 80,
+      "label": "Valid?"
+    },
+    {
+      "id": "n4",
+      "kind": "rect",
+      "x": 80,
+      "y": 390,
+      "w": 120,
+      "h": 60,
+      "label": "Show error"
+    },
+    {
+      "id": "n5",
+      "kind": "rect",
+      "x": 440,
+      "y": 390,
+      "w": 120,
+      "h": 60,
+      "label": "Load dashboard"
+    },
+    {
+      "id": "n6",
+      "kind": "terminal",
+      "x": 440,
+      "y": 510,
+      "w": 120,
+      "h": 48,
+      "label": "End"
+    }
+  ],
+  "edges": [
+    {
+      "id": "e1",
+      "from": { "nodeId": "n1", "side": "bottom" },
+      "to": { "nodeId": "n2", "side": "top" }
+    },
+    {
+      "id": "e2",
+      "from": { "nodeId": "n2", "side": "bottom" },
+      "to": { "nodeId": "n3", "side": "top" }
+    },
+    {
+      "id": "e3",
+      "from": { "nodeId": "n3", "side": "left" },
+      "to": { "nodeId": "n4", "side": "top" }
+    },
+    {
+      "id": "e4",
+      "from": { "nodeId": "n3", "side": "right" },
+      "to": { "nodeId": "n5", "side": "top" }
+    },
+    {
+      "id": "e5",
+      "from": { "nodeId": "n4", "side": "bottom" },
+      "to": { "nodeId": "n6", "side": "bottom" }
+    },
+    {
+      "id": "e6",
+      "from": { "nodeId": "n5", "side": "bottom" },
+      "to": { "nodeId": "n6", "side": "top" }
+    }
+  ]
+}
