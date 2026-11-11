@@ -93,6 +93,53 @@ The one rule that shapes the codebase: **`core/` never imports from `ui/`**.
 document model can be tested as a pure function. ESLint enforces this boundary
 with `no-restricted-imports`, so the rule cannot rot.
 
+### How the data flows
+
+Every arrow in this diagram is a real import in the source, not a sketch. The
+dependency only ever points down: `ui/` may use `core/`, never the reverse.
+
+```mermaid
+graph TD
+  main["main.tsx"] --> App["App.tsx"]
+  App --> Canvas["Canvas.tsx"]
+  App --> Toolbar["Toolbar.tsx"]
+  App --> reducer["reducer.ts"]
+  App --> serialize["serialize.ts"]
+  App --> types["types.ts"]
+  App --> fixture["fixtures/login-flow.json"]
+
+  Canvas --> geometry["geometry.ts"]
+  Canvas --> types
+  Canvas --> drag["hooks/usePointerDrag.ts"]
+  Canvas --> connect["hooks/useConnect.ts"]
+
+  drag --> pointer["ui/pointer.ts"]
+  connect --> pointer
+  connect --> geometry
+
+  reducer --> geometry
+  reducer --> types
+  serialize --> types
+  geometry --> types
+
+  classDef core fill:#e8f0fe,stroke:#2563eb,stroke-width:2px,color:#1b1f24;
+  classDef ui fill:#f6f7f9,stroke:#5b6472,stroke-width:1px,color:#1b1f24;
+  classDef data fill:#fff4e5,stroke:#b45309,stroke-width:1px,color:#1b1f24;
+  class reducer,serialize,types,geometry core;
+  class App,Canvas,Toolbar,drag,connect,pointer,main ui;
+  class fixture data;
+```
+
+Two things that diagram makes visible:
+
+- **`core/` is a closed set.** `types.ts` has no imports at all; `geometry.ts`,
+  `reducer.ts`, and `serialize.ts` depend only on it and on each other. Nothing
+  in `core/` reaches for React, the DOM, or a random number, so the entire
+  document model is testable as pure functions.
+- **`pointer.ts` is deliberately in `ui/`, not `core/`.** It reads the SVG
+  screen CTM to convert client coordinates into SVG user units, which is a DOM
+  operation. Keeping it on the UI side is what lets `core/` stay DOM-free.
+
 ### State model
 
 ```ts
@@ -263,5 +310,3 @@ See [`tasks/README.md`](tasks/README.md) for the three steps to run one.
 ## License
 
 MIT
-
-# flowboard
