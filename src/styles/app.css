@@ -6,11 +6,16 @@
 .app {
   display: grid;
   grid-template-rows: auto 1fr auto;
+  grid-template-areas:
+    'toolbar'
+    'canvas'
+    'status';
   height: 100%;
   min-height: 0;
 }
 
 .app__toolbar {
+  grid-area: toolbar;
   display: flex;
   align-items: center;
   gap: var(--space-3);
@@ -36,6 +41,7 @@
 }
 
 .app__canvas {
+  grid-area: canvas;
   position: relative;
   min-height: 0;
   overflow: hidden;
@@ -51,6 +57,7 @@
 }
 
 .app__status {
+  grid-area: status;
   display: flex;
   align-items: center;
   gap: var(--space-4);
@@ -154,8 +161,85 @@ g[data-node-id][aria-pressed='true'] > polygon {
   border-color: var(--color-accent);
 }
 
+/*
+ * Mobile layout.
+ *
+ * The plan puts the toolbar at the bottom on a phone: the canvas then gets
+ * the full width and the thumb reaches the controls without covering the
+ * drawing. The grid rows are reversed so the toolbar lands last.
+ */
 @media (max-width: 720px) {
+  .app {
+    /*
+     * The canvas takes the flexible row. On desktop the flexible row is the
+     * canvas too, but the status bar is not the one that grows here: with
+     * `1fr` in the middle the status bar would absorb all the leftover
+     * height and sit as a tall empty band above the toolbar.
+     */
+    grid-template-rows: 1fr auto auto;
+    grid-template-areas:
+      'canvas'
+      'status'
+      'toolbar';
+  }
+
   .app__toolbar {
+    grid-area: toolbar;
     flex-wrap: wrap;
+    justify-content: center;
+    gap: var(--space-2);
+    border-top: 1px solid var(--color-border);
+    border-bottom: none;
+  }
+
+  .app__canvas {
+    grid-area: canvas;
+  }
+
+  .app__status {
+    grid-area: status;
+  }
+
+  /* The brand takes a whole row on a narrow screen, so it does not squeeze
+     the buttons into two lines. */
+  .app__brand {
+    flex-basis: 100%;
+    text-align: center;
+    margin-right: 0;
+  }
+
+  .app__spacer {
+    display: none;
+  }
+
+  /* A finger needs a bigger target than a mouse does. */
+  .button {
+    padding: var(--space-2) var(--space-3);
+  }
+
+  /*
+   * The canvas scrolls instead of shrinking the document to fit.
+   *
+   * Scaling a 720px-wide viewBox down to a 393px phone makes the nodes too
+   * small to grab and the ports too small to hit. The document keeps its
+   * natural size and the canvas pans, which is what a phone user expects
+   * from a drawing app.
+   */
+  .app__canvas {
+    overflow: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .app__canvas > svg {
+    width: 720px;
+    height: 620px;
+    max-width: none;
+    /* The canvas pans with a swipe, so the background must not swallow it. */
+    touch-action: pan-x pan-y;
+  }
+
+  /* A node is dragged, not scrolled, so it keeps the pointer to itself. */
+  g[data-node-id] {
+    touch-action: none;
   }
 }
