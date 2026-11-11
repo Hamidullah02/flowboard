@@ -25,7 +25,7 @@ export function Canvas({ doc }: CanvasProps) {
         width="100%"
         height="100%"
         viewBox={`0 0 ${width} ${height}`}
-        role="img"
+        role="application"
         aria-label="Flowchart canvas"
         data-testid="canvas"
       >
@@ -59,6 +59,8 @@ export function Canvas({ doc }: CanvasProps) {
                 stroke={EDGE_STROKE}
                 strokeWidth={2}
                 markerEnd="url(#arrowhead)"
+                role="img"
+                aria-label={`Edge from ${from.label} to ${to.label}`}
               />
             );
           })}
@@ -82,7 +84,12 @@ function NodeShape({ node }: { node: ViewNode }) {
   };
 
   return (
-    <g data-node-id={node.id} aria-label={`${node.kind}: ${node.label}`}>
+    <g
+      data-node-id={node.id}
+      role="button"
+      tabIndex={0}
+      aria-label={`${node.kind}: ${node.label}`}
+    >
       {node.kind === 'rect' ? (
         <rect x={node.x} y={node.y} width={node.w} height={node.h} rx={6} {...common} />
       ) : null}

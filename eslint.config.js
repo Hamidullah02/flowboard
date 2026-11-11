@@ -49,7 +49,7 @@ export default tseslint.config(
     },
   },
   {
-    files: ['src/core/**/*.ts'],
+    files: ['src/core/**/*.{ts,tsx}'],
     rules: {
       // The core must stay free of DOM and React APIs.
       'no-restricted-imports': [
@@ -58,11 +58,27 @@ export default tseslint.config(
           paths: [
             { name: 'react', message: 'src/core must not depend on React.' },
             { name: 'react-dom', message: 'src/core must not depend on react-dom.' },
+            { name: 'react/jsx-runtime', message: 'src/core must not depend on React.' },
           ],
-          patterns: ['@ui/*'],
+          patterns: [
+            {
+              group: ['@ui/*', '../ui/*', '../../ui/*', '../../../ui/*'],
+              message: 'src/core must not depend on src/ui. The dependency points ui -> core only.',
+            },
+          ],
         },
       ],
       '@typescript-eslint/no-explicit-any': 'error',
+      // No DOM access from core. `clientToSvg` and friends live in src/ui.
+      'no-restricted-globals': [
+        'error',
+        { name: 'document', message: 'src/core must not touch the DOM.' },
+        { name: 'window', message: 'src/core must not touch the DOM.' },
+        { name: 'localStorage', message: 'src/core must not touch browser storage.' },
+        { name: 'sessionStorage', message: 'src/core must not touch browser storage.' },
+        { name: 'navigator', message: 'src/core must not touch browser APIs.' },
+        { name: 'requestAnimationFrame', message: 'src/core must not schedule browser work.' },
+      ],
     },
   },
 );
