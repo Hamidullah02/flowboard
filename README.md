@@ -3,9 +3,10 @@
 A React + TypeScript SVG flowchart editor, built as a portfolio project to prove
 frontend and interactive-graphics skill.
 
-> **Status: Day 1.** The toolchain, the UI shell, the fixture, and the CI pipeline
-> are in place. The document model (`src/core/`) is not written yet — it is the
-> next piece of work, and it is deliberately written by hand.
+> **Status: the editor works.** The toolchain, the UI shell, the fixture, and the CI
+> pipeline are in place, and the document model (`src/core/`) is implemented and
+> wired into the UI. The app loads the fixture flowchart, and you can add, move,
+> rename, connect, select, and delete nodes, with undo and redo.
 
 ## Why this project exists
 
@@ -44,7 +45,7 @@ Three commands, that is the whole setup.
 
 ```
 src/
-  core/      # pure logic: no React, no DOM  (to be written)
+  core/      # pure logic: no React, no DOM
   ui/        # React components
   styles/    # design tokens and app styles
 fixtures/    # reference flowchart, as JSON
@@ -59,7 +60,7 @@ The one rule that shapes the codebase: **`core/` never imports from `ui/`**.
 document model can be tested as a pure function. ESLint enforces this boundary
 with `no-restricted-imports`, so the rule cannot rot.
 
-### State model (planned)
+### State model
 
 ```ts
 type NodeKind = 'rect' | 'diamond' | 'terminal';
@@ -96,6 +97,30 @@ The reducer is a pure function: `(state, action) => state`. No React, no DOM, no
 randomness. Positions are stored snapped to a 10px grid. History is
 snapshot-based (`past` / `future` hold whole `Doc` objects, capped at 100) and
 `SELECT` never creates a history entry.
+
+### Decisions worth stating
+
+A few rules are not obvious from the code alone, so they are written down here.
+
+- **History lives inside `src/core/reducer.ts`, not in its own `history.ts`.**
+  The rules are four sentences and three branches. A separate file would
+  re-export knowledge the reducer already has and make "what counts as a
+  history entry" something you have to look in two places to answer.
+- **`past` holds the document _before_ the change.** After editing `D0` into
+  `D1`, `past` is `[D0]`, so undo returns to `D0`. Pushing the document after
+  the change would make undo a no-op.
+- **`IMPORT` pushes the old document onto `past`,** so an import can be undone
+  like any other edit. The import is validated first: an invalid file changes
+  nothing and shows an inline error.
+- **A move that does not move the node is not a change,** so it costs no undo
+  step. The same goes for a rejected edge (self-loop or duplicate): the state
+  is returned unchanged, by reference, and no history entry is created.
+- **The default id generator derives ids from the document** instead of
+  keeping a counter. React's StrictMode calls a reducer twice in development,
+  and a counter would burn two ids per change.
+- **`clientToSvg` lives in `src/ui/pointer.ts`, not in `src/core/geometry.ts`.**
+  It reads the SVG screen CTM, so it touches the DOM. A DOM-free `core/` is the
+  stronger rule.
 
 ## Contributing
 
