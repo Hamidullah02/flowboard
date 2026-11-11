@@ -16,6 +16,11 @@ export default defineConfig({
     environment: 'jsdom',
     setupFiles: ['./tests/setup.ts'],
     include: ['tests/unit/**/*.test.ts', 'tests/component/**/*.test.tsx'],
+    /*
+     * CSS is processed rather than stubbed, so a test can read the real
+     * design tokens with a `?raw` import and check their contrast.
+     */
+    css: true,
     coverage: {
       provider: 'v8',
       reporter: ['text', 'html', 'lcov'],
