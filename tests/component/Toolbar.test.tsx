@@ -22,6 +22,9 @@ describe('Toolbar', () => {
         onRedo={() => {
           /* no-op */
         }}
+        onDelete={() => {
+          /* no-op */
+        }}
         onImport={() => {
           /* no-op */
         }}
@@ -30,6 +33,7 @@ describe('Toolbar', () => {
         }}
         canUndo={false}
         canRedo={false}
+        canDelete={false}
       />,
     );
 
@@ -38,5 +42,6 @@ describe('Toolbar', () => {
     expect(screen.getByRole('button', { name: 'Terminal' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Undo' })).toBeDisabled();
     expect(screen.getByRole('button', { name: 'Redo' })).toBeDisabled();
+    expect(screen.getByRole('button', { name: 'Delete' })).toBeDisabled();
   });
 });
