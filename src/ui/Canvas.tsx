@@ -130,6 +130,20 @@ export function Canvas({ doc, selection, dispatch }: CanvasProps) {
     setEditingId(node.id);
   }, []);
 
+  /**
+   * Tabbing to a node selects it.
+   *
+   * The nodes are already focusable (`tabIndex={0}`), so Tab moves between
+   * them in document order. Selecting on focus means the keyboard path
+   * needs no separate "select" step before Enter or Delete works.
+   */
+  const handleFocusNode = useCallback(
+    (node: FlowNode) => {
+      dispatch({ type: 'SELECT', nodeIds: [node.id] });
+    },
+    [dispatch],
+  );
+
   const commitLabel = useCallback(
     (node: FlowNode, label: string) => {
       setEditingId((current) => (current === node.id ? null : current));
@@ -252,6 +266,7 @@ export function Canvas({ doc, selection, dispatch }: CanvasProps) {
               onCommitLabel={commitLabel}
               onPortPointerDown={handlePortPointerDown}
               onHover={setHoveredId}
+              onFocusNode={handleFocusNode}
             />
           ))}
         </g>
@@ -287,6 +302,7 @@ interface NodeShapeProps {
   onCommitLabel: (node: FlowNode, label: string) => void;
   onPortPointerDown: (event: React.PointerEvent<SVGCircleElement>, origin: EdgeEnd) => void;
   onHover: (nodeId: string | null) => void;
+  onFocusNode: (node: FlowNode) => void;
 }
 
 function NodeShape({
@@ -301,6 +317,7 @@ function NodeShape({
   onCommitLabel,
   onPortPointerDown,
   onHover,
+  onFocusNode,
 }: NodeShapeProps) {
   const common = {
     fill: NODE_FILL,
@@ -316,6 +333,7 @@ function NodeShape({
       aria-label={`${node.kind}: ${node.label || 'unlabelled'}`}
       aria-pressed={selected}
       data-valid-target={validTarget ? 'true' : undefined}
+      className="node"
       onPointerDown={(event) => {
         onPointerDown(event, node);
       }}
@@ -327,6 +345,11 @@ function NodeShape({
       }}
       onClick={(event) => {
         onClick(event, node);
+      }}
+      onFocus={() => {
+        // Tabbing to a node selects it, so Enter can edit it and Delete can
+        // remove it without a second step.
+        onFocusNode(node);
       }}
       onDoubleClick={() => {
         onDoubleClick(node);

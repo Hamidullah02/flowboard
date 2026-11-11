@@ -98,6 +98,36 @@ g[data-node-id][aria-pressed='true'] {
   filter: drop-shadow(0 0 2px var(--color-accent));
 }
 
+/*
+ * A visible focus ring on a node.
+ *
+ * The global `:focus-visible` rule sets `box-shadow`, which does nothing on
+ * an SVG element. The ring is drawn as a stroke on the node shape instead.
+ *
+ * A CSS rule beats an SVG presentation attribute, so this overrides the
+ * stroke that the component sets inline.
+ */
+g[data-node-id]:focus-visible {
+  outline: none;
+}
+
+g[data-node-id]:focus-visible > rect,
+g[data-node-id]:focus-visible > polygon {
+  stroke: var(--color-accent);
+  stroke-width: 3;
+}
+
+/*
+ * Selection is not shown by colour alone.
+ *
+ * A selected node gets a dashed stroke in addition to the thicker outline,
+ * so the state survives a greyscale print or a colour-blind reader.
+ */
+g[data-node-id][aria-pressed='true'] > rect,
+g[data-node-id][aria-pressed='true'] > polygon {
+  stroke-dasharray: 6 3;
+}
+
 .button {
   padding: var(--space-1) var(--space-3);
   font: inherit;
