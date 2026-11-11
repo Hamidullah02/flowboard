@@ -155,3 +155,52 @@ test('the empty canvas shows a hint', async ({ page }) => {
 
   await expect(page.getByTestId('empty-hint')).toBeVisible();
 });
+
+test('the layout fits a phone screen', async ({ page, isMobile }) => {
+  await page.goto('/');
+
+  const viewport = page.viewportSize();
+  if (!viewport) throw new Error('the page has no viewport');
+
+  const toolbar = await page.locator('.app__toolbar').boundingBox();
+  if (!toolbar) throw new Error('the toolbar has no bounding box');
+
+  if (isMobile) {
+    // The toolbar moves to the bottom on a phone, so the canvas keeps the
+    // full width and the thumb reaches the controls.
+    expect(toolbar.y).toBeGreaterThan(viewport.height / 2);
+
+    // The status bar is a single line, not a tall empty band.
+    const status = await page.locator('.app__status').boundingBox();
+    if (!status) throw new Error('the status bar has no bounding box');
+    expect(status.height).toBeLessThan(60);
+  } else {
+    // On a desktop the toolbar stays at the top.
+    expect(toolbar.y).toBeLessThan(viewport.height / 2);
+  }
+
+  // Nothing may overflow the viewport horizontally.
+  const scrollWidth = await page.evaluate(() => {
+    return document.documentElement.scrollWidth;
+  });
+  expect(scrollWidth).toBeLessThanOrEqual(viewport.width);
+});
+
+test('a node can be dragged on a phone', async ({ page }) => {
+  await page.goto('/');
+
+  const node = nodeById(page, 'n2');
+  const before = await positionOf(node.locator('rect'));
+
+  const box = await node.boundingBox();
+  if (!box) throw new Error('node n2 has no bounding box');
+
+  await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
+  await page.mouse.down();
+  await page.mouse.move(box.x + box.width / 2 + 40, box.y + box.height / 2 + 40, { steps: 10 });
+  await page.mouse.up();
+
+  const after = await positionOf(node.locator('rect'));
+  expect(after.x).toBeGreaterThan(before.x);
+  expect(after.y).toBeGreaterThan(before.y);
+});

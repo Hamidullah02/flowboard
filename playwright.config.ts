@@ -18,6 +18,12 @@ export default defineConfig({
       name: 'chromium',
       use: { ...devices['Desktop Chrome'] },
     },
+    {
+      // The mobile pass from the plan: on a phone, viewing and dragging must
+      // work, and the toolbar moves to the bottom.
+      name: 'mobile-chromium',
+      use: { ...devices['Pixel 5'] },
+    },
   ],
   webServer: {
     command: `npm run preview -- --port ${PORT} --strictPort --host 127.0.0.1`,
