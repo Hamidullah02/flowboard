@@ -220,6 +220,10 @@ A few rules are not obvious from the code alone, so they are written down here.
   would keep passing while the app failed. Vitest stubs CSS imports by
   default, so `css: true` is set in `vitest.config.ts` to make the `?raw`
   import return the real file.
+- **The flexible grid row is the canvas on every screen size.** On a phone the
+  rows are reordered, and if the `1fr` stayed on the status bar it would
+  absorb all the leftover height and sit as a tall empty band above the
+  toolbar. The canvas is the only thing that should grow.
 
 ## Contributing
 
