@@ -1,0 +1,63 @@
+/*
+ * Reference solution for Task 1.
+ *
+ * This is a patch, not a commit. Apply it to the starting commit and the
+ * grading tests pass.
+ *
+ * The fix is in `containsPoint`: a diamond is only hit where the diamond
+ * actually is, so the four corners of its bounding box are empty space.
+ */
+
+--- a/src/core/geometry.ts
++++ b/src/core/geometry.ts
+@@ -145,12 +145,42 @@
+ 
+ /**
+  * Whether a point is inside a node's bounding box. The border counts as
+- * inside, so a click exactly on the edge still selects the node.
++ * inside, so a click exactly on the edge still selects the node.
++ *
++ * A diamond is not a box. It is drawn as a rotated square, so the four
++ * corners of its bounding box are empty space and a click there must not
++ * select it. The test is the standard half-plane test: the point is inside
++ * when it is on the inside of all four edges of the rotated square.
+  */
+ export function containsPoint(node: FlowNode, point: Point): boolean {
+-  return (
+-    point.x >= node.x &&
+-    point.x <= node.x + node.w &&
+-    point.y >= node.y &&
+-    point.y <= node.y + node.h
+-  );
++  if (!inBoundingBox(node, point)) return false;
++
++  if (node.kind !== 'diamond') return true;
++
++  const cx = node.x + node.w / 2;
++  const cy = node.y + node.h / 2;
++  const halfWidth = node.w / 2;
++  const halfHeight = node.h / 2;
++
++  // The diamond is the set of points whose normalised distance from the
++  // centre is at most one. Working in the node's own scale is what makes
++  // this correct for a diamond that is not square.
++  const dx = Math.abs(point.x - cx) / halfWidth;
++  const dy = Math.abs(point.y - cy) / halfHeight;
++
++  return dx + dy <= 1;
++}
++
++/**
++ * Whether a point is inside a node's bounding box.
++ *
++ * The border counts as inside, so a click exactly on the edge still hits
++ * the node.
++ */
++function inBoundingBox(node: FlowNode, point: Point): boolean {
++  return (
++    point.x >= node.x &&
++    point.x <= node.x + node.w &&
++    point.y >= node.y &&
++    point.y <= node.y + node.h
++  );
+ }
