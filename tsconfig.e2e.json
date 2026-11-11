@@ -23,5 +23,5 @@
     "exactOptionalPropertyTypes": true,
     "noUncheckedIndexedAccess": true
   },
-  "include": ["tests/setup.ts", "tests/e2e"]
+  "include": ["tests/setup.ts", "tests/e2e", "tests/recording"]
 }

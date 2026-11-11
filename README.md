@@ -5,6 +5,8 @@
 A React + TypeScript SVG flowchart editor, built as a portfolio project to prove
 frontend and interactive-graphics skill.
 
+![The Flowboard editor: drag a node, undo, and connect two nodes](docs/demo.gif)
+
 > **Status: the editor works.** The toolchain, the UI shell, the fixture, and the CI
 > pipeline are in place, and the document model (`src/core/`) is implemented and
 > wired into the UI. The app loads the fixture flowchart, and you can add, move,
@@ -32,17 +34,24 @@ Three commands, that is the whole setup.
 
 ## Scripts
 
-| Script              | What it does                                         |
-| ------------------- | ---------------------------------------------------- |
-| `npm run dev`       | Vite dev server                                      |
-| `npm run build`     | Typecheck (`tsc -b`) then production build           |
-| `npm run preview`   | Serve the production build locally                   |
-| `npm run lint`      | ESLint, strict type-checked rules                    |
-| `npm run typecheck` | `tsc -b --noEmit`                                    |
-| `npm test`          | Vitest unit + component tests                        |
-| `npm run coverage`  | Vitest with coverage, fails below 90% on `src/core/` |
-| `npm run e2e`       | Playwright end-to-end tests                          |
-| `npm run format`    | Prettier, write mode                                 |
+| Script                | What it does                                         |
+| --------------------- | ---------------------------------------------------- |
+| `npm run dev`         | Vite dev server                                      |
+| `npm run build`       | Typecheck (`tsc -b`) then production build           |
+| `npm run preview`     | Serve the production build locally                   |
+| `npm run lint`        | ESLint, strict type-checked rules                    |
+| `npm run typecheck`   | `tsc -b --noEmit`                                    |
+| `npm test`            | Vitest unit + component tests                        |
+| `npm run coverage`    | Vitest with coverage, fails below 90% on `src/core/` |
+| `npm run e2e`         | Playwright end-to-end tests                          |
+| `npm run format`      | Prettier, write mode                                 |
+| `npm run demo:record` | Re-record the demo frames in `docs/demo/`            |
+| `npm run demo:build`  | Assemble `docs/demo.gif` from the frames with ffmpeg |
+
+The two `demo:` scripts rebuild the GIF at the top of this file. They are not
+part of the test suite and CI does not run them. `demo:build` needs ffmpeg on
+your PATH; `demo:record` needs the Playwright browsers. The frames are
+intermediate output and are not committed, only the assembled GIF is.
 
 ## Deploying
 
@@ -76,6 +85,7 @@ tests/
   unit/      # Vitest specs for core/
   component/ # Vitest + Testing Library specs for ui/
   e2e/       # Playwright specs
+  recording/ # the demo recorder, run by hand, not by CI
 ```
 
 The one rule that shapes the codebase: **`core/` never imports from `ui/`**.

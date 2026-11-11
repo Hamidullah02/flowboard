@@ -17,7 +17,9 @@
     "test:watch": "vitest",
     "coverage": "vitest run --coverage",
     "e2e": "playwright test",
-    "e2e:install": "playwright install --with-deps chromium"
+    "e2e:install": "playwright install --with-deps chromium",
+    "demo:record": "playwright test --config=playwright.recording.config.ts",
+    "demo:build": "ffmpeg -y -framerate 12 -i docs/demo/frame-%03d.png -vf \"scale=900:-1:flags=lanczos,split[s0][s1];[s0]palettegen[p];[s1][p]paletteuse\" docs/demo.gif"
   },
   "dependencies": {
     "react": "^19.3.1",

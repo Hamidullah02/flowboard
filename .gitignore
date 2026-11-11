@@ -17,6 +17,9 @@ test-results/
 blob-report/
 .playwright/
 
+# --- Demo recording (the assembled GIF is committed, the frames are not) ---
+docs/demo/
+
 # --- IDE / editor folders ---
 .idea/
 .idea_modules/
