@@ -5,7 +5,12 @@ import reactRefresh from 'eslint-plugin-react-refresh';
 import tseslint from 'typescript-eslint';
 
 export default tseslint.config(
-  { ignores: ['dist', 'coverage', 'node_modules', 'playwright-report', 'test-results'] },
+  {
+    // The `tasks/` folder holds the grading tests for the task packages. They
+    // are copied into `tests/` to be run, and they are not part of any
+    // tsconfig project, so linting them here would fail on the parser.
+    ignores: ['dist', 'coverage', 'node_modules', 'playwright-report', 'test-results', 'tasks/**'],
+  },
   {
     files: ['**/*.{ts,tsx}'],
     extends: [js.configs.recommended, ...tseslint.configs.strictTypeChecked],

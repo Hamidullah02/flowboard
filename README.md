@@ -233,6 +233,23 @@ This project follows a written workflow:
 - Tests before behaviour.
 - `npm run lint && npm run typecheck && npm test` must pass before a commit.
 
+### Task packages
+
+The [`tasks/`](tasks/) folder holds two self-contained bug reports, each one
+a task a contributor could pick up without reading the codebase first. Every
+success criterion is a test, not an opinion, and each task ships with the
+commit it starts from and a reference solution.
+
+Both tasks were found in this codebase and verified by running the grading
+tests before and after the fix:
+
+| Task                                                                                | Failing on the starting commit | Passing with the fix |
+| ----------------------------------------------------------------------------------- | ------------------------------ | -------------------- |
+| [`task-01-diamond-hit-test`](tasks/task-01-diamond-hit-test/)                       | 2 of 8                         | 8 of 8               |
+| [`task-02-import-validator-invariants`](tasks/task-02-import-validator-invariants/) | 8 of 11                        | 11 of 11             |
+
+See [`tasks/README.md`](tasks/README.md) for the three steps to run one.
+
 ## License
 
 MIT
