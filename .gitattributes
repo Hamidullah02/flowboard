@@ -1,0 +1,38 @@
+# Normalize text files to LF in the repository and in the working tree.
+# Prettier is configured with endOfLine: lf, so this keeps the two consistent.
+* text=auto eol=lf
+
+# Be explicit for source files, so a stray encoding artifact can never make
+# git treat a source file as binary again.
+*.ts text
+*.tsx text
+*.js text
+*.jsx text
+*.mjs text
+*.cjs text
+*.css text
+*.html text
+*.json text
+*.md text
+*.yml text
+*.yaml text
+*.svg text
+*.txt text
+
+# Binary assets stay binary.
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.ico binary
+*.webp binary
+*.woff binary
+*.woff2 binary
+*.ttf binary
+*.otf binary
+*.wasm binary
+*.mp3 binary
+*.mp4 binary
+*.webm binary
+*.pdf binary
+*.zip binary
