@@ -1,5 +1,7 @@
 # Flowboard
 
+[![CI](https://github.com/Hamidullah02/flowboard/actions/workflows/ci.yml/badge.svg)](https://github.com/Hamidullah02/flowboard/actions/workflows/ci.yml)
+
 A React + TypeScript SVG flowchart editor, built as a portfolio project to prove
 frontend and interactive-graphics skill.
 
