@@ -1,30 +1,134 @@
-import type { ViewDoc, ViewNode } from '@ui/viewModel';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { edgePath, portPosition, snap } from '@core/geometry';
+import type { Action, Doc, EdgeEnd, FlowNode, PortSide, Selection } from '@core/types';
+import { usePointerDrag } from '@ui/hooks/usePointerDrag';
+import { useConnect } from '@ui/hooks/useConnect';
 
 export interface CanvasProps {
-  doc: ViewDoc;
+  doc: Doc;
+  selection: Selection;
+  dispatch: (action: Action) => void;
 }
 
 const NODE_FILL = 'var(--color-node-fill)';
 const NODE_STROKE = 'var(--color-node-stroke)';
 const EDGE_STROKE = 'var(--color-edge-stroke)';
+const SELECTED_STROKE = 'var(--color-accent)';
 const GRID_DOT = 'var(--color-grid-dot)';
+const PORT_FILL = 'var(--color-port)';
+
+const WIDTH = 720;
+const HEIGHT = 620;
+const PORT_RADIUS = 4;
+
+const PORT_SIDES: PortSide[] = ['top', 'right', 'bottom', 'left'];
 
 /**
  * The SVG canvas.
  *
- * Renders the dot grid, the edges, and the nodes. Interaction (drag, connect,
- * select) arrives with the reducer, in later days.
+ * Renders the grid, the edges, and the nodes, and turns pointer input into
+ * reducer actions. Every state change goes through `dispatch`, so the
+ * document rules live in `src/core/reducer.ts` and stay testable.
  */
-export function Canvas({ doc }: CanvasProps) {
-  const width = 720;
-  const height = 620;
+export function Canvas({ doc, selection, dispatch }: CanvasProps) {
+  const [editingId, setEditingId] = useState<string | null>(null);
+
+  // The node being dragged. A ref, not state: the commit callback must read
+  // the current value without re-creating the handler on every pointer move.
+  const dragNodeIdRef = useRef<string | null>(null);
+
+  /**
+   * One drag produces exactly one MOVE_NODE, dispatched on pointer up. The
+   * preview position lives in the hook's local state, so pointer moves never
+   * reach the reducer.
+   */
+  const { handlePointerDown } = usePointerDrag({
+    onCommit: (from, to) => {
+      const nodeId = dragNodeIdRef.current;
+      dragNodeIdRef.current = null;
+      if (nodeId === null) return;
+
+      const node = doc.nodes.find((candidate) => candidate.id === nodeId);
+      if (!node) return;
+
+      // The node's top-left corner moves by the same delta as the pointer.
+      const dx = to.x - from.x;
+      const dy = to.y - from.y;
+      dispatch({
+        type: 'MOVE_NODE',
+        id: nodeId,
+        x: snap(node.x + dx),
+        y: snap(node.y + dy),
+      });
+    },
+  });
+
+  const { connect, handlePortPointerDown } = useConnect({
+    nodes: doc.nodes,
+    onConnect: (from: EdgeEnd, to: EdgeEnd) => {
+      dispatch({ type: 'ADD_EDGE', from, to });
+    },
+  });
+
+  const handleNodePointerDown = useCallback(
+    (event: React.PointerEvent<SVGGElement>, node: FlowNode) => {
+      dragNodeIdRef.current = node.id;
+      handlePointerDown(event);
+    },
+    [handlePointerDown],
+  );
+
+  const handleNodeClick = useCallback(
+    (event: React.MouseEvent<SVGGElement>, node: FlowNode) => {
+      event.stopPropagation();
+      dispatch({ type: 'SELECT', nodeIds: [node.id] });
+    },
+    [dispatch],
+  );
+
+  const handleBackgroundPointerDown = useCallback(() => {
+    // A click on empty canvas clears the selection.
+    dispatch({ type: 'SELECT' });
+  }, [dispatch]);
+
+  const handleLabelDoubleClick = useCallback((node: FlowNode) => {
+    setEditingId(node.id);
+  }, []);
+
+  const commitLabel = useCallback(
+    (node: FlowNode, label: string) => {
+      setEditingId((current) => (current === node.id ? null : current));
+      dispatch({ type: 'RENAME_NODE', id: node.id, label });
+    },
+    [dispatch],
+  );
+
+  // Delete and Backspace remove the selection.
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key !== 'Delete' && event.key !== 'Backspace') return;
+
+      const target = event.target;
+      if (target instanceof HTMLElement && isEditable(target)) return;
+
+      event.preventDefault();
+      dispatch({ type: 'DELETE_SELECTION' });
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [dispatch]);
+
+  const selectedNodeIds = new Set(selection.nodeIds);
 
   return (
     <main className="app__canvas">
       <svg
         width="100%"
         height="100%"
-        viewBox={`0 0 ${width} ${height}`}
+        viewBox={`0 0 ${WIDTH} ${HEIGHT}`}
         role="application"
         aria-label="Flowchart canvas"
         data-testid="canvas"
@@ -38,7 +142,13 @@ export function Canvas({ doc }: CanvasProps) {
           </marker>
         </defs>
 
-        <rect width={width} height={height} fill="url(#dot-grid)" />
+        <rect
+          width={WIDTH}
+          height={HEIGHT}
+          fill="url(#dot-grid)"
+          data-testid="canvas-background"
+          onPointerDown={handleBackgroundPointerDown}
+        />
 
         <g data-testid="edges">
           {doc.edges.map((edge) => {
@@ -46,29 +156,54 @@ export function Canvas({ doc }: CanvasProps) {
             const to = doc.nodes.find((node) => node.id === edge.to.nodeId);
             if (!from || !to) return null;
 
-            const start = portPosition(from, edge.from.side);
-            const end = portPosition(to, edge.to.side);
+            const selected = selection.edgeIds.includes(edge.id);
 
             return (
-              <line
+              <path
                 key={edge.id}
-                x1={start.x}
-                y1={start.y}
-                x2={end.x}
-                y2={end.y}
-                stroke={EDGE_STROKE}
-                strokeWidth={2}
+                d={edgePath(from, edge.from.side, to, edge.to.side)}
+                fill="none"
+                stroke={selected ? SELECTED_STROKE : EDGE_STROKE}
+                strokeWidth={selected ? 3 : 2}
                 markerEnd="url(#arrowhead)"
                 role="img"
                 aria-label={`Edge from ${from.label} to ${to.label}`}
+                data-edge-id={edge.id}
+                onClick={(event) => {
+                  event.stopPropagation();
+                  dispatch({ type: 'SELECT', edgeIds: [edge.id] });
+                }}
               />
             );
           })}
         </g>
 
+        {/* The ghost line follows the pointer during a connection drag. */}
+        {connect.active && connect.origin && connect.position ? (
+          <path
+            data-testid="ghost-line"
+            d={ghostPath(doc, connect.origin, connect.position)}
+            fill="none"
+            stroke={SELECTED_STROKE}
+            strokeWidth={2}
+            strokeDasharray="4 4"
+          />
+        ) : null}
+
         <g data-testid="nodes">
           {doc.nodes.map((node) => (
-            <NodeShape key={node.id} node={node} />
+            <NodeShape
+              key={node.id}
+              node={node}
+              selected={selectedNodeIds.has(node.id)}
+              editing={editingId === node.id}
+              connecting={connect.active}
+              onPointerDown={handleNodePointerDown}
+              onClick={handleNodeClick}
+              onDoubleClick={handleLabelDoubleClick}
+              onCommitLabel={commitLabel}
+              onPortPointerDown={handlePortPointerDown}
+            />
           ))}
         </g>
       </svg>
@@ -76,11 +211,48 @@ export function Canvas({ doc }: CanvasProps) {
   );
 }
 
-function NodeShape({ node }: { node: ViewNode }) {
+/** The ghost line runs from the origin port to the pointer. */
+function ghostPath(doc: Doc, origin: EdgeEnd, position: { x: number; y: number }): string {
+  const node = doc.nodes.find((candidate) => candidate.id === origin.nodeId);
+  if (!node) return '';
+
+  const start = portPosition(node, origin.side);
+  return `M ${start.x} ${start.y} L ${position.x} ${position.y}`;
+}
+
+/** Whether a keyboard event is aimed at a text field. */
+function isEditable(element: HTMLElement): boolean {
+  const tag = element.tagName;
+  return tag === 'INPUT' || tag === 'TEXTAREA' || element.isContentEditable;
+}
+
+interface NodeShapeProps {
+  node: FlowNode;
+  selected: boolean;
+  editing: boolean;
+  connecting: boolean;
+  onPointerDown: (event: React.PointerEvent<SVGGElement>, node: FlowNode) => void;
+  onClick: (event: React.MouseEvent<SVGGElement>, node: FlowNode) => void;
+  onDoubleClick: (node: FlowNode) => void;
+  onCommitLabel: (node: FlowNode, label: string) => void;
+  onPortPointerDown: (event: React.PointerEvent<SVGCircleElement>, origin: EdgeEnd) => void;
+}
+
+function NodeShape({
+  node,
+  selected,
+  editing,
+  connecting,
+  onPointerDown,
+  onClick,
+  onDoubleClick,
+  onCommitLabel,
+  onPortPointerDown,
+}: NodeShapeProps) {
   const common = {
     fill: NODE_FILL,
-    stroke: NODE_STROKE,
-    strokeWidth: 2,
+    stroke: selected ? SELECTED_STROKE : NODE_STROKE,
+    strokeWidth: selected ? 3 : 2,
   };
 
   return (
@@ -88,7 +260,17 @@ function NodeShape({ node }: { node: ViewNode }) {
       data-node-id={node.id}
       role="button"
       tabIndex={0}
-      aria-label={`${node.kind}: ${node.label}`}
+      aria-label={`${node.kind}: ${node.label || 'unlabelled'}`}
+      aria-pressed={selected}
+      onPointerDown={(event) => {
+        onPointerDown(event, node);
+      }}
+      onClick={(event) => {
+        onClick(event, node);
+      }}
+      onDoubleClick={() => {
+        onDoubleClick(node);
+      }}
     >
       {node.kind === 'rect' ? (
         <rect x={node.x} y={node.y} width={node.w} height={node.h} rx={6} {...common} />
@@ -97,38 +279,71 @@ function NodeShape({ node }: { node: ViewNode }) {
         <rect x={node.x} y={node.y} width={node.w} height={node.h} rx={node.h / 2} {...common} />
       ) : null}
       {node.kind === 'diamond' ? <polygon points={diamondPoints(node)} {...common} /> : null}
-      <text
-        x={node.x + node.w / 2}
-        y={node.y + node.h / 2}
-        textAnchor="middle"
-        dominantBaseline="middle"
-        fill="var(--color-text)"
-        fontSize={14}
-      >
-        {node.label}
-      </text>
+
+      {editing ? (
+        <foreignObject x={node.x} y={node.y} width={node.w} height={node.h}>
+          <input
+            className="node__label-input"
+            defaultValue={node.label}
+            autoFocus
+            aria-label={`Label for ${node.label || 'node'}`}
+            onPointerDown={(event) => {
+              event.stopPropagation();
+            }}
+            onKeyDown={(event) => {
+              if (event.key === 'Enter') {
+                onCommitLabel(node, event.currentTarget.value);
+              } else if (event.key === 'Escape') {
+                onCommitLabel(node, node.label);
+              }
+            }}
+            onBlur={(event) => {
+              onCommitLabel(node, event.currentTarget.value);
+            }}
+          />
+        </foreignObject>
+      ) : (
+        <text
+          x={node.x + node.w / 2}
+          y={node.y + node.h / 2}
+          textAnchor="middle"
+          dominantBaseline="middle"
+          fill="var(--color-text)"
+          fontSize={14}
+          pointerEvents="none"
+        >
+          {node.label}
+        </text>
+      )}
+
+      {/* Ports are shown while connecting, so they never crowd the canvas. */}
+      {connecting
+        ? PORT_SIDES.map((side) => {
+            const port = portPosition(node, side);
+            return (
+              <circle
+                key={side}
+                cx={port.x}
+                cy={port.y}
+                r={PORT_RADIUS}
+                fill={PORT_FILL}
+                data-port={`${node.id}:${side}`}
+                aria-label={`Port ${side} of ${node.label || node.id}`}
+                role="button"
+                onPointerDown={(event) => {
+                  event.stopPropagation();
+                  onPortPointerDown(event, { nodeId: node.id, side });
+                }}
+              />
+            );
+          })
+        : null}
     </g>
   );
 }
 
-function diamondPoints(node: ViewNode): string {
+function diamondPoints(node: FlowNode): string {
   const cx = node.x + node.w / 2;
   const cy = node.y + node.h / 2;
   return `${cx},${node.y} ${node.x + node.w},${cy} ${cx},${node.y + node.h} ${node.x},${cy}`;
-}
-
-function portPosition(
-  node: ViewNode,
-  side: 'top' | 'right' | 'bottom' | 'left',
-): { x: number; y: number } {
-  switch (side) {
-    case 'top':
-      return { x: node.x + node.w / 2, y: node.y };
-    case 'right':
-      return { x: node.x + node.w, y: node.y + node.h / 2 };
-    case 'bottom':
-      return { x: node.x + node.w / 2, y: node.y + node.h };
-    case 'left':
-      return { x: node.x, y: node.y + node.h / 2 };
-  }
 }

@@ -42,6 +42,14 @@
   background: var(--color-bg);
 }
 
+/* The SVG fills the canvas area and scales to fit it. */
+.app__canvas > svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+  touch-action: none;
+}
+
 .app__status {
   display: flex;
   align-items: center;
@@ -51,6 +59,31 @@
   color: var(--color-text-muted);
   background: var(--color-surface);
   border-top: 1px solid var(--color-border);
+}
+
+/* An inline error, next to the counts. It never replaces the document. */
+.app__error {
+  color: var(--color-danger);
+  font-weight: 500;
+}
+
+/* The label editor sits on top of the node shape while editing. */
+.node__label-input {
+  width: 100%;
+  height: 100%;
+  padding: 0 var(--space-2);
+  font: inherit;
+  font-size: var(--font-size-sm);
+  color: var(--color-text);
+  text-align: center;
+  background: var(--color-surface);
+  border: 1px solid var(--color-accent);
+  border-radius: var(--radius-ui);
+}
+
+/* A selected node gets a thicker outline, not a colour change alone. */
+g[data-node-id][aria-pressed='true'] {
+  filter: drop-shadow(0 0 2px var(--color-accent));
 }
 
 .button {
