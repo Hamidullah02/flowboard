@@ -121,6 +121,28 @@ test('two nodes can be connected by dragging from a port', async ({ page }) => {
   await expect(page.getByTestId('edges').locator('[data-edge-id]')).toHaveCount(before + 1);
 });
 
+test('a node can be reached and edited with the keyboard', async ({ page }) => {
+  await page.goto('/');
+
+  // Focus the first node the way a keyboard user would.
+  await nodeById(page, 'n1').focus();
+
+  // Focusing selects the node, so the state is announced without a click.
+  await expect(nodeById(page, 'n1')).toHaveAttribute('aria-pressed', 'true');
+
+  // The focus ring is drawn as a stroke, since box-shadow does nothing on
+  // an SVG element.
+  const stroke = await nodeById(page, 'n1')
+    .locator('rect')
+    .evaluate((el) => {
+      return getComputedStyle(el).stroke;
+    });
+  expect(stroke).toBe('rgb(37, 99, 235)');
+
+  await page.keyboard.press('Enter');
+  await expect(page.getByLabel('Label for Start')).toBeVisible();
+});
+
 test('the empty canvas shows a hint', async ({ page }) => {
   await page.goto('/');
 
