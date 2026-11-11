@@ -44,6 +44,26 @@ Three commands, that is the whole setup.
 | `npm run e2e`       | Playwright end-to-end tests                          |
 | `npm run format`    | Prettier, write mode                                 |
 
+## Deploying
+
+The app is a static Vite build, so it deploys to any static host.
+
+```bash
+npm run build     # emits dist/
+```
+
+`vercel.json` pins the build command and the output directory, so Vercel's
+dashboard needs no further setup:
+
+```bash
+npx vercel        # first time, to link the project
+npx vercel --prod # deploy
+```
+
+The same `dist/` folder works on Netlify, GitHub Pages, or any static file
+server. There is no backend, no database, and no login, so there is nothing
+else to configure or secure.
+
 ## Architecture
 
 ```
