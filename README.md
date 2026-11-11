@@ -18,8 +18,8 @@ better. The goal is a public repo that proves:
 - React + TypeScript (strict, zero `any` in `src/core/`) competence
 - Real geometry work (SVG coordinate transforms, port maths, hit testing)
 - Reducer-based state management with working undo/redo
-- Objective verification: 159 unit and component tests, 7 e2e tests, coverage
-  gated at 90%
+- Objective verification: 159 unit and component tests, 18 e2e tests across
+  desktop and mobile, coverage gated at 90%
 
 ## Getting started
 
@@ -142,6 +142,31 @@ rather than left to a manual pass.
   waits for a pause rather than interrupting.
 - **`prefers-reduced-motion` is respected,** and the theme follows
   `prefers-color-scheme`.
+
+### Dark mode and mobile
+
+The dark theme is not a second set of stylesheets. The tokens in
+`src/styles/tokens.css` are redefined once under
+`@media (prefers-color-scheme: dark)`, and every colour in the app is a
+variable. That is why the contrast test can check both themes without
+duplicating the palette: it reads the same file twice.
+
+On a phone (720px and below):
+
+- **The toolbar moves to the bottom.** The canvas keeps the full width and
+  the thumb reaches the controls without covering the drawing.
+- **The canvas pans instead of shrinking the document.** Scaling a 720px
+  viewBox down to a 393px phone made the nodes too small to grab and the
+  ports too small to hit, so the document keeps its natural size and the
+  canvas scrolls.
+- **A node is dragged, not scrolled.** `touch-action: none` on a node keeps
+  the pointer for the drag, while the canvas around it still pans with a
+  swipe.
+- **The buttons are bigger,** because a finger needs a bigger target than a
+  mouse does.
+
+A second Playwright project runs the whole suite on a Pixel 5, so all of
+this is verified on every commit rather than by hand.
 
 ### Decisions worth stating
 
