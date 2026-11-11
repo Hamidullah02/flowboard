@@ -100,15 +100,22 @@ export interface StatusBarProps {
 
 /**
  * Bottom status bar: document counts and current selection.
+ *
+ * The counts are in a live region, so a screen reader announces the change
+ * when a node is added or deleted. `aria-live="polite"` means the
+ * announcement waits for a pause rather than interrupting whatever the user
+ * is reading.
  */
 export function StatusBar({ nodeCount, edgeCount, selectionLabel, children }: StatusBarProps) {
   return (
     <footer className="app__status">
-      <span>
+      <span aria-live="polite" aria-atomic="true">
         {nodeCount} {nodeCount === 1 ? 'node' : 'nodes'}, {edgeCount}{' '}
         {edgeCount === 1 ? 'edge' : 'edges'}
       </span>
-      <span>selection: {selectionLabel}</span>
+      <span aria-live="polite" aria-atomic="true">
+        selection: {selectionLabel}
+      </span>
       {children}
     </footer>
   );
