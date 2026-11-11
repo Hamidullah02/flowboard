@@ -18,7 +18,8 @@ better. The goal is a public repo that proves:
 - React + TypeScript (strict, zero `any` in `src/core/`) competence
 - Real geometry work (SVG coordinate transforms, port maths, hit testing)
 - Reducer-based state management with working undo/redo
-- Objective verification: 25+ unit tests, 3 e2e tests, coverage gated at 90%
+- Objective verification: 159 unit and component tests, 7 e2e tests, coverage
+  gated at 90%
 
 ## Getting started
 
@@ -107,13 +108,40 @@ snapshot-based (`past` / `future` hold whole `Doc` objects, capped at 100) and
 | Drag a node                  | It follows the pointer, snapped to the 10px grid; the edges follow it. Releasing commits one undo step.                             |
 | Hover a node                 | Its four ports appear. Drag from a port to another node to connect. A ghost line follows the pointer and a valid target highlights. |
 | Double-click a node          | Its label becomes editable. Enter confirms, Escape cancels.                                                                         |
-| Enter on a selected node     | Starts editing the label.                                                                                                           |
+| Tab to a node                | The node is focused and selected, so the next key acts on it.                                                                       |
+| Enter on a focused node      | Starts editing the label.                                                                                                           |
 | Delete / Backspace           | Deletes the selection. A node takes its edges with it.                                                                              |
 | Ctrl/Cmd+Z, Ctrl/Cmd+Shift+Z | Undo and redo.                                                                                                                      |
 
 The drag preview lives in component state, not in the reducer. The reducer is
 only told the final position, once, on pointer up — that is what keeps one drag
 equal to one undo step.
+
+### Accessibility
+
+The editor is fully operable with the keyboard, and the checks are automated
+rather than left to a manual pass.
+
+- **Every node is focusable and has an accessible name.** A node is announced
+  as its kind plus its label (`terminal: Start`), and an unlabelled node is
+  announced as `unlabelled` rather than as an empty string.
+- **Focusing a node selects it.** There is no separate "select" step, so
+  Tab → Enter → Delete is a complete edit without touching the mouse.
+- **The focus ring is drawn as a stroke,** because `box-shadow` does nothing
+  on an SVG element. The e2e test asserts the computed stroke in a real
+  browser, because a jsdom test cannot prove the ring renders.
+- **Selection is never shown by colour alone.** A selected node gets a thicker
+  stroke _and_ a dashed one, so the state survives a greyscale print.
+- **Contrast is measured, not assumed.** `tests/unit/contrast.test.ts` reads
+  the real stylesheet and checks every text pair against 4.5:1 and every
+  meaningful graphic — node outlines, edges, ports, the focus ring — against
+  3:1, in both the light and the dark theme. Change a colour that fails and
+  the build stops.
+- **The status bar is a live region,** so the node count and the current
+  selection are announced when they change. The announcement is polite, so it
+  waits for a pause rather than interrupting.
+- **`prefers-reduced-motion` is respected,** and the theme follows
+  `prefers-color-scheme`.
 
 ### Decisions worth stating
 
@@ -138,6 +166,15 @@ A few rules are not obvious from the code alone, so they are written down here.
 - **`clientToSvg` lives in `src/ui/pointer.ts`, not in `src/core/geometry.ts`.**
   It reads the SVG screen CTM, so it touches the DOM. A DOM-free `core/` is the
   stronger rule.
+- **The focus ring is a stroke, not a `box-shadow`.** `box-shadow` does not
+  render on an SVG element, so the global `:focus-visible` rule silently does
+  nothing for a node. A CSS rule beats an SVG presentation attribute, so the
+  ring is styled from the stylesheet instead of from the component's props.
+- **The contrast test reads the stylesheet, not a copy of the tokens.** A
+  duplicated palette in the test file drifts from the real one, and the test
+  would keep passing while the app failed. Vitest stubs CSS imports by
+  default, so `css: true` is set in `vitest.config.ts` to make the `?raw`
+  import return the real file.
 
 ## Contributing
 
