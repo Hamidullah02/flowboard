@@ -98,6 +98,21 @@ randomness. Positions are stored snapped to a 10px grid. History is
 snapshot-based (`past` / `future` hold whole `Doc` objects, capped at 100) and
 `SELECT` never creates a history entry.
 
+### How the editor works
+
+| Action                       | What happens                                                                                                                        |
+| ---------------------------- | ----------------------------------------------------------------------------------------------------------------------------------- |
+| Drag a node                  | It follows the pointer, snapped to the 10px grid; the edges follow it. Releasing commits one undo step.                             |
+| Hover a node                 | Its four ports appear. Drag from a port to another node to connect. A ghost line follows the pointer and a valid target highlights. |
+| Double-click a node          | Its label becomes editable. Enter confirms, Escape cancels.                                                                         |
+| Enter on a selected node     | Starts editing the label.                                                                                                           |
+| Delete / Backspace           | Deletes the selection. A node takes its edges with it.                                                                              |
+| Ctrl/Cmd+Z, Ctrl/Cmd+Shift+Z | Undo and redo.                                                                                                                      |
+
+The drag preview lives in component state, not in the reducer. The reducer is
+only told the final position, once, on pointer up — that is what keeps one drag
+equal to one undo step.
+
 ### Decisions worth stating
 
 A few rules are not obvious from the code alone, so they are written down here.
