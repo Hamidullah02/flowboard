@@ -6,10 +6,12 @@ export interface ToolbarProps {
   onAddNode: (action: ToolbarAction) => void;
   onUndo: () => void;
   onRedo: () => void;
+  onDelete: () => void;
   onImport: () => void;
   onExport: () => void;
   canUndo: boolean;
   canRedo: boolean;
+  canDelete: boolean;
 }
 
 /**
@@ -22,10 +24,12 @@ export function Toolbar({
   onAddNode,
   onUndo,
   onRedo,
+  onDelete,
   onImport,
   onExport,
   canUndo,
   canRedo,
+  canDelete,
 }: ToolbarProps) {
   return (
     <header className="app__toolbar">
@@ -69,6 +73,9 @@ export function Toolbar({
         </button>
         <button type="button" className="button" onClick={onRedo} disabled={!canRedo}>
           Redo
+        </button>
+        <button type="button" className="button" onClick={onDelete} disabled={!canDelete}>
+          Delete
         </button>
       </div>
 

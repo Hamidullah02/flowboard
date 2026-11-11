@@ -1,8 +1,10 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { edgePath, portPosition, snap } from '@core/geometry';
-import type { Action, Doc, EdgeEnd, FlowNode, PortSide, Selection } from '@core/types';
+import { PORT_SIDES } from '@core/types';
+import type { Action, Doc, EdgeEnd, FlowNode, Selection } from '@core/types';
 import { usePointerDrag } from '@ui/hooks/usePointerDrag';
 import { useConnect } from '@ui/hooks/useConnect';
+import { isEditableTarget } from '@ui/keyboard';
 
 export interface CanvasProps {
   doc: Doc;
@@ -16,12 +18,11 @@ const EDGE_STROKE = 'var(--color-edge-stroke)';
 const SELECTED_STROKE = 'var(--color-accent)';
 const GRID_DOT = 'var(--color-grid-dot)';
 const PORT_FILL = 'var(--color-port)';
+const VALID_TARGET_STROKE = 'var(--color-port)';
 
 const WIDTH = 720;
 const HEIGHT = 620;
 const PORT_RADIUS = 4;
-
-const PORT_SIDES: PortSide[] = ['top', 'right', 'bottom', 'left'];
 
 /**
  * The SVG canvas.
@@ -32,20 +33,21 @@ const PORT_SIDES: PortSide[] = ['top', 'right', 'bottom', 'left'];
  */
 export function Canvas({ doc, selection, dispatch }: CanvasProps) {
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [hoveredId, setHoveredId] = useState<string | null>(null);
 
-  // The node being dragged. A ref, not state: the commit callback must read
-  // the current value without re-creating the handler on every pointer move.
-  const dragNodeIdRef = useRef<string | null>(null);
+  // The node being dragged. State, not a ref: the preview position depends
+  // on it, and a ref would not trigger a re-render.
+  const [dragNodeId, setDragNodeId] = useState<string | null>(null);
 
   /**
    * One drag produces exactly one MOVE_NODE, dispatched on pointer up. The
    * preview position lives in the hook's local state, so pointer moves never
    * reach the reducer.
    */
-  const { handlePointerDown } = usePointerDrag({
+  const { drag, handlePointerDown } = usePointerDrag({
     onCommit: (from, to) => {
-      const nodeId = dragNodeIdRef.current;
-      dragNodeIdRef.current = null;
+      const nodeId = dragNodeId;
+      setDragNodeId(null);
       if (nodeId === null) return;
 
       const node = doc.nodes.find((candidate) => candidate.id === nodeId);
@@ -61,6 +63,9 @@ export function Canvas({ doc, selection, dispatch }: CanvasProps) {
         y: snap(node.y + dy),
       });
     },
+    onCancel: () => {
+      setDragNodeId(null);
+    },
   });
 
   const { connect, handlePortPointerDown } = useConnect({
@@ -70,9 +75,39 @@ export function Canvas({ doc, selection, dispatch }: CanvasProps) {
     },
   });
 
+  /**
+   * The dragged node's preview position, snapped.
+   *
+   * The preview is computed from the pointer delta, exactly like the
+   * committed position, so the node does not jump when the button is
+   * released.
+   */
+  const previewOffset = useMemo(() => {
+    if (!drag.active || dragNodeId === null) return null;
+    if (!drag.origin || !drag.position) return null;
+
+    return { x: drag.position.x - drag.origin.x, y: drag.position.y - drag.origin.y };
+  }, [drag.active, drag.origin, drag.position, dragNodeId]);
+
+  /**
+   * The nodes as they should be drawn right now.
+   *
+   * During a drag the dragged node is replaced by its preview position, so
+   * the edges that touch it follow the pointer.
+   */
+  const renderNodes = useMemo(() => {
+    if (!previewOffset || dragNodeId === null) return doc.nodes;
+
+    return doc.nodes.map((node) =>
+      node.id === dragNodeId
+        ? { ...node, x: snap(node.x + previewOffset.x), y: snap(node.y + previewOffset.y) }
+        : node,
+    );
+  }, [doc.nodes, previewOffset, dragNodeId]);
+
   const handleNodePointerDown = useCallback(
     (event: React.PointerEvent<SVGGElement>, node: FlowNode) => {
-      dragNodeIdRef.current = node.id;
+      setDragNodeId(node.id);
       handlePointerDown(event);
     },
     [handlePointerDown],
@@ -103,23 +138,35 @@ export function Canvas({ doc, selection, dispatch }: CanvasProps) {
     [dispatch],
   );
 
-  // Delete and Backspace remove the selection.
+  // Delete and Backspace remove the selection. Enter starts editing the
+  // selected node's label.
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key !== 'Delete' && event.key !== 'Backspace') return;
+      // A key aimed at a text field belongs to that field. Pressing Delete
+      // inside the label editor must delete a character, not the node.
+      if (isEditableTarget(event.target)) return;
 
-      const target = event.target;
-      if (target instanceof HTMLElement && isEditable(target)) return;
+      if (event.key === 'Delete' || event.key === 'Backspace') {
+        event.preventDefault();
+        dispatch({ type: 'DELETE_SELECTION' });
+        return;
+      }
 
-      event.preventDefault();
-      dispatch({ type: 'DELETE_SELECTION' });
+      if (event.key === 'Enter' && editingId === null && selection.nodeIds.length === 1) {
+        const selectedId = selection.nodeIds[0];
+        const node = doc.nodes.find((candidate) => candidate.id === selectedId);
+        if (!node) return;
+
+        event.preventDefault();
+        setEditingId(node.id);
+      }
     };
 
     window.addEventListener('keydown', handleKeyDown);
     return () => {
       window.removeEventListener('keydown', handleKeyDown);
     };
-  }, [dispatch]);
+  }, [dispatch, editingId, selection.nodeIds, doc.nodes]);
 
   const selectedNodeIds = new Set(selection.nodeIds);
 
@@ -152,8 +199,8 @@ export function Canvas({ doc, selection, dispatch }: CanvasProps) {
 
         <g data-testid="edges">
           {doc.edges.map((edge) => {
-            const from = doc.nodes.find((node) => node.id === edge.from.nodeId);
-            const to = doc.nodes.find((node) => node.id === edge.to.nodeId);
+            const from = renderNodes.find((node) => node.id === edge.from.nodeId);
+            const to = renderNodes.find((node) => node.id === edge.to.nodeId);
             if (!from || !to) return null;
 
             const selected = selection.edgeIds.includes(edge.id);
@@ -191,22 +238,30 @@ export function Canvas({ doc, selection, dispatch }: CanvasProps) {
         ) : null}
 
         <g data-testid="nodes">
-          {doc.nodes.map((node) => (
+          {renderNodes.map((node) => (
             <NodeShape
               key={node.id}
               node={node}
               selected={selectedNodeIds.has(node.id)}
               editing={editingId === node.id}
-              connecting={connect.active}
+              showPorts={connect.active || hoveredId === node.id}
+              validTarget={connect.targetNodeId === node.id}
               onPointerDown={handleNodePointerDown}
               onClick={handleNodeClick}
               onDoubleClick={handleLabelDoubleClick}
               onCommitLabel={commitLabel}
               onPortPointerDown={handlePortPointerDown}
+              onHover={setHoveredId}
             />
           ))}
         </g>
       </svg>
+
+      {doc.nodes.length === 0 ? (
+        <p className="canvas__hint" data-testid="empty-hint">
+          Add a node to start
+        </p>
+      ) : null}
     </main>
   );
 }
@@ -220,39 +275,37 @@ function ghostPath(doc: Doc, origin: EdgeEnd, position: { x: number; y: number }
   return `M ${start.x} ${start.y} L ${position.x} ${position.y}`;
 }
 
-/** Whether a keyboard event is aimed at a text field. */
-function isEditable(element: HTMLElement): boolean {
-  const tag = element.tagName;
-  return tag === 'INPUT' || tag === 'TEXTAREA' || element.isContentEditable;
-}
-
 interface NodeShapeProps {
   node: FlowNode;
   selected: boolean;
   editing: boolean;
-  connecting: boolean;
+  showPorts: boolean;
+  validTarget: boolean;
   onPointerDown: (event: React.PointerEvent<SVGGElement>, node: FlowNode) => void;
   onClick: (event: React.MouseEvent<SVGGElement>, node: FlowNode) => void;
   onDoubleClick: (node: FlowNode) => void;
   onCommitLabel: (node: FlowNode, label: string) => void;
   onPortPointerDown: (event: React.PointerEvent<SVGCircleElement>, origin: EdgeEnd) => void;
+  onHover: (nodeId: string | null) => void;
 }
 
 function NodeShape({
   node,
   selected,
   editing,
-  connecting,
+  showPorts,
+  validTarget,
   onPointerDown,
   onClick,
   onDoubleClick,
   onCommitLabel,
   onPortPointerDown,
+  onHover,
 }: NodeShapeProps) {
   const common = {
     fill: NODE_FILL,
-    stroke: selected ? SELECTED_STROKE : NODE_STROKE,
-    strokeWidth: selected ? 3 : 2,
+    stroke: validTarget ? VALID_TARGET_STROKE : selected ? SELECTED_STROKE : NODE_STROKE,
+    strokeWidth: validTarget || selected ? 3 : 2,
   };
 
   return (
@@ -262,8 +315,15 @@ function NodeShape({
       tabIndex={0}
       aria-label={`${node.kind}: ${node.label || 'unlabelled'}`}
       aria-pressed={selected}
+      data-valid-target={validTarget ? 'true' : undefined}
       onPointerDown={(event) => {
         onPointerDown(event, node);
+      }}
+      onPointerEnter={() => {
+        onHover(node.id);
+      }}
+      onPointerLeave={() => {
+        onHover(null);
       }}
       onClick={(event) => {
         onClick(event, node);
@@ -316,8 +376,8 @@ function NodeShape({
         </text>
       )}
 
-      {/* Ports are shown while connecting, so they never crowd the canvas. */}
-      {connecting
+      {/* Ports appear on hover, so they never crowd the canvas. */}
+      {showPorts
         ? PORT_SIDES.map((side) => {
             const port = portPosition(node, side);
             return (

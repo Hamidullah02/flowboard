@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useReducer, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useReducer, useRef, useState } from 'react';
 import { reducer } from '@core/reducer';
 import { exportDoc, importDoc } from '@core/serialize';
 import { initialState } from '@core/types';
@@ -6,6 +6,7 @@ import type { Action, State } from '@core/types';
 import { StatusBar, Toolbar } from '@ui/Toolbar';
 import type { ToolbarAction } from '@ui/Toolbar';
 import { Canvas } from '@ui/Canvas';
+import { hasModifier, isEditableTarget } from '@ui/keyboard';
 import fixture from '../../fixtures/login-flow.json';
 
 const fixtureDoc = importDoc(fixture);
@@ -44,6 +45,36 @@ export function App() {
 
   const handleRedo = useCallback(() => {
     dispatch({ type: 'REDO' });
+  }, []);
+
+  const handleDelete = useCallback(() => {
+    dispatch({ type: 'DELETE_SELECTION' });
+  }, []);
+
+  // Ctrl/Cmd+Z undoes, Ctrl/Cmd+Shift+Z (or Ctrl+Y) redoes.
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (!hasModifier(event)) return;
+      if (isEditableTarget(event.target)) return;
+
+      const key = event.key.toLowerCase();
+
+      if (key === 'z' && event.shiftKey) {
+        event.preventDefault();
+        dispatch({ type: 'REDO' });
+      } else if (key === 'z') {
+        event.preventDefault();
+        dispatch({ type: 'UNDO' });
+      } else if (key === 'y') {
+        event.preventDefault();
+        dispatch({ type: 'REDO' });
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+    };
   }, []);
 
   const handleExport = useCallback(() => {
@@ -93,10 +124,12 @@ export function App() {
         onAddNode={handleAddNode}
         onUndo={handleUndo}
         onRedo={handleRedo}
+        onDelete={handleDelete}
         onImport={handleImport}
         onExport={handleExport}
         canUndo={past.length > 0}
         canRedo={future.length > 0}
+        canDelete={selection.nodeIds.length > 0 || selection.edgeIds.length > 0}
       />
 
       <Canvas doc={doc} selection={selection} dispatch={dispatch} />

@@ -81,6 +81,18 @@
   border-radius: var(--radius-ui);
 }
 
+/* The empty-canvas hint, centred over the canvas. */
+.canvas__hint {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  margin: 0;
+  color: var(--color-text-muted);
+  font-size: var(--font-size-md);
+  pointer-events: none;
+}
+
 /* A selected node gets a thicker outline, not a colour change alone. */
 g[data-node-id][aria-pressed='true'] {
   filter: drop-shadow(0 0 2px var(--color-accent));
