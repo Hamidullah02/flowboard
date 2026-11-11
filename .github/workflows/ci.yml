@@ -6,9 +6,12 @@ on:
   pull_request:
     branches: [main]
 
+# Every push gets its own run. Cancelling in-flight runs would mean an
+# intermediate commit never gets verified, and a portfolio repo needs each
+# commit to stand on its own.
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
+  cancel-in-progress: false
 
 jobs:
   quality:
