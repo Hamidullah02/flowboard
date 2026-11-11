@@ -22,10 +22,7 @@ The hit test treats every node as if it were a rectangle. `containsPoint` in
 
 ```ts
 return (
-  point.x >= node.x &&
-  point.x <= node.x + node.w &&
-  point.y >= node.y &&
-  point.y <= node.y + node.h
+  point.x >= node.x && point.x <= node.x + node.w && point.y >= node.y && point.y <= node.y + node.h
 );
 ```
 
@@ -70,7 +67,7 @@ Make the hit test respect the shape of the node.
 
 - `src/core/` must stay free of React and of DOM access. The fix belongs in
   `src/core/geometry.ts`.
-- Do not change how the diamond is *drawn*. Only the hit test changes.
+- Do not change how the diamond is _drawn_. Only the hit test changes.
 - Keep the existing behaviour of `rect` and `terminal` exactly as it is.
 
 ## Success criteria

@@ -18,16 +18,16 @@ suite. Only the copy runs.
 
 ## The checks
 
-| # | Check                                                                     | Test name                                    |
-| - | ------------------------------------------------------------------------- | -------------------------------------------- |
-| 1 | The centre of a diamond is inside it                                      | `keeps the centre of a diamond inside it`     |
-| 2 | The four corners of a diamond are **outside** it                          | `keeps the four corners of a diamond outside it` |
-| 3 | A point on the border of a diamond is inside it                           | `keeps a point on the border of a diamond inside it` |
-| 4 | The four corners of a rectangle are still inside it                        | `keeps the corners of a rectangle inside it`  |
-| 5 | The four corners of a terminal are still inside it                        | `keeps the corners of a terminal inside it`   |
-| 6 | `hitTestNode` skips a diamond when the point is in its empty corner       | `skips a diamond when the point is in its empty corner` |
-| 7 | `hitTestNode` returns the diamond when the point is inside it             | `returns the diamond when the point is inside it` |
-| 8 | `hitTestNode` still returns the top-most node when two overlap            | `returns the top-most node when two nodes overlap` |
+| #   | Check                                                               | Test name                                               |
+| --- | ------------------------------------------------------------------- | ------------------------------------------------------- |
+| 1   | The centre of a diamond is inside it                                | `keeps the centre of a diamond inside it`               |
+| 2   | The four corners of a diamond are **outside** it                    | `keeps the four corners of a diamond outside it`        |
+| 3   | A point on the border of a diamond is inside it                     | `keeps a point on the border of a diamond inside it`    |
+| 4   | The four corners of a rectangle are still inside it                 | `keeps the corners of a rectangle inside it`            |
+| 5   | The four corners of a terminal are still inside it                  | `keeps the corners of a terminal inside it`             |
+| 6   | `hitTestNode` skips a diamond when the point is in its empty corner | `skips a diamond when the point is in its empty corner` |
+| 7   | `hitTestNode` returns the diamond when the point is inside it       | `returns the diamond when the point is inside it`       |
+| 8   | `hitTestNode` still returns the top-most node when two overlap      | `returns the top-most node when two nodes overlap`      |
 
 ## What must not regress
 

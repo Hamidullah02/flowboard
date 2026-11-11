@@ -1,0 +1,33 @@
+diff --git a/src/core/serialize.ts b/src/core/serialize.ts
+index 4fda83c..2860157 100644
+--- a/src/core/serialize.ts
++++ b/src/core/serialize.ts
+@@ -7,6 +7,7 @@
+  * returned.
+  */
+
++import { snap } from '@core/geometry';
+ import { NODE_KINDS, PORT_SIDES } from '@core/types';
+ import type { Doc, EdgeEnd, FlowEdge, FlowNode, NodeKind, PortSide } from '@core/types';
+
+@@ -79,6 +80,20 @@ function parseNode(value: unknown, index: number): ParseResult<FlowNode> {
+     return { ok: false, error: `Node "${id}" has an invalid position or size.` };
+   }
+
++  // A node's size must be positive. A zero-sized node cannot be clicked,
++  // and a negative one is drawn flipped, which puts its ports in the wrong
++  // place and routes every attached edge to the wrong point.
++  if (w <= 0 || h <= 0) {
++    return { ok: false, error: `Node "${id}" has a size that is not positive.` };
++  }
++
++  // Every node the app creates is snapped to the grid, so a document with a
++  // node that is not on the grid could not have come from the app. Reject it
++  // rather than silently repairing it.
++  if (snap(x) !== x || snap(y) !== y) {
++    return { ok: false, error: `Node "${id}" is not on the grid.` };
++  }
++
+   return { ok: true, value: { id, kind, x, y, w, h, label } };
+ }
+

@@ -1,21 +1,11 @@
-/*
- * Reference solution for Task 1.
- *
- * This is a patch, not a commit. Apply it to the starting commit and the
- * grading tests pass.
- *
- * The fix is in `containsPoint`: a diamond is only hit where the diamond
- * actually is, so the four corners of its bounding box are empty space.
- */
-
+diff --git a/src/core/geometry.ts b/src/core/geometry.ts
+index 38a955a..7ac95ad 100644
 --- a/src/core/geometry.ts
 +++ b/src/core/geometry.ts
-@@ -145,12 +145,42 @@
- 
+@@ -143,8 +143,38 @@ export function nodeCenter(node: FlowNode): Point {
  /**
   * Whether a point is inside a node's bounding box. The border counts as
-- * inside, so a click exactly on the edge still selects the node.
-+ * inside, so a click exactly on the edge still selects the node.
+  * inside, so a click exactly on the edge still selects the node.
 + *
 + * A diamond is not a box. It is drawn as a rotated square, so the four
 + * corners of its bounding box are empty space and a click there must not
@@ -23,12 +13,6 @@
 + * when it is on the inside of all four edges of the rotated square.
   */
  export function containsPoint(node: FlowNode, point: Point): boolean {
--  return (
--    point.x >= node.x &&
--    point.x <= node.x + node.w &&
--    point.y >= node.y &&
--    point.y <= node.y + node.h
--  );
 +  if (!inBoundingBox(node, point)) return false;
 +
 +  if (node.kind !== 'diamond') return true;
@@ -54,10 +38,6 @@
 + * the node.
 + */
 +function inBoundingBox(node: FlowNode, point: Point): boolean {
-+  return (
-+    point.x >= node.x &&
-+    point.x <= node.x + node.w &&
-+    point.y >= node.y &&
-+    point.y <= node.y + node.h
-+  );
- }
+   return (
+     point.x >= node.x &&
+     point.x <= node.x + node.w &&
